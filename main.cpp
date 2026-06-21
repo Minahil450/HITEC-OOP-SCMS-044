@@ -2,184 +2,195 @@
 #include <string>
 using namespace std;
 
-// ======= FeeRecord Class =======
-class FeeRecord {
-private:
-    string* studentRef;
-    double semesterFee;
-    double hostelFee;
-    double libraryFine;
-    double totalPaid;
-    double balance;
-
+// ======= Student =======
+class Student {
 public:
-    FeeRecord(const string& name, double semFee, double hostFee, double libFine)
-        : semesterFee(semFee), hostelFee(hostFee), libraryFine(libFine), totalPaid(0.0)
-    {
-        studentRef = new string(name);
-        balance = semesterFee + hostelFee + libraryFine;
-        cout << "[Constructor] FeeRecord created for: " << *studentRef << "\n";
-    }
-
-    FeeRecord(const FeeRecord& other)
-        : semesterFee(other.semesterFee), hostelFee(other.hostelFee),
-          libraryFine(other.libraryFine), totalPaid(other.totalPaid), balance(other.balance)
-    {
-        studentRef = new string(*other.studentRef);
-        cout << "[Copy Constructor] Copied record for: " << *studentRef << "\n";
-    }
-
-    FeeRecord& operator=(const FeeRecord& other) {
-        if (this == &other) return *this;
-        delete studentRef;
-        studentRef  = new string(*other.studentRef);
-        semesterFee = other.semesterFee;
-        hostelFee   = other.hostelFee;
-        libraryFine = other.libraryFine;
-        totalPaid   = other.totalPaid;
-        balance     = other.balance;
-        cout << "[Copy Assignment] Assigned record for: " << *studentRef << "\n";
-        return *this;
-    }
-
-    ~FeeRecord() {
-        cout << "[Destructor] FeeRecord destroyed for: " << *studentRef << "\n";
-        delete studentRef;
-    }
-
-    FeeRecord& operator-=(double payment) {
-        if (payment <= 0) { cout << "  [Warning] Payment must be positive.\n"; return *this; }
-        if (payment > balance) { cout << "  [Warning] Amount exceeds balance!\n"; payment = balance; }
-        totalPaid += payment;
-        balance   -= payment;
-        cout << "  [Payment] Rs. " << payment << " paid. Remaining: Rs. " << balance << "\n";
-        return *this;
-    }
-
-    void display() const {
-        cout << "\n====== FEE RECORD ======\n";
-        cout << "Student      : " << *studentRef << "\n";
-        cout << "Semester Fee : Rs. " << semesterFee << "\n";
-        cout << "Hostel Fee   : Rs. " << hostelFee   << "\n";
-        cout << "Library Fine : Rs. " << libraryFine << "\n";
-        cout << "Total Paid   : Rs. " << totalPaid   << "\n";
-        cout << "Balance      : Rs. " << balance     << "\n";
-        cout << "========================\n";
-    }
-
-    double getBalance() const { return balance; }
+    int    rollNo;
+    string name;
+    Student() : rollNo(0), name("") {}
+    Student(int r, const string& n) : rollNo(r), name(n) {}
+    void display() const { cout << "      Roll#" << rollNo << " - " << name << "\n"; }
 };
 
-
-// ======= Invoice Class =======
-class Invoice {
+// ======= Room =======
+class Room {
 private:
-    int    invoiceID;
-    string date;
-    string* items;
-    int    itemCount;
-    double totalAmount;
-
-    static int invoiceCounter;
-
+    int      roomNumber;
+    string   type;
+    int      floor;
+    Student* occupants[3];
+    int      occupantCount;
+    int      capacity;
 public:
-    Invoice(const string& invoiceDate, const string itemList[], int count, double amount)
-        : date(invoiceDate), itemCount(count), totalAmount(amount)
-    {
-        invoiceID = ++invoiceCounter;
-        items = new string[itemCount];
-        for (int i = 0; i < itemCount; i++)
-            items[i] = itemList[i];
-        cout << "[Constructor] Invoice #" << invoiceID << " created.\n";
+    Room() : roomNumber(0), type("single"), floor(0), occupantCount(0), capacity(1) {
+        for (int i = 0; i < 3; i++) occupants[i] = nullptr;
     }
-
-    Invoice(const Invoice& other)
-        : date(other.date), itemCount(other.itemCount), totalAmount(other.totalAmount)
-    {
-        invoiceID = ++invoiceCounter;
-        items = new string[itemCount];
-        for (int i = 0; i < itemCount; i++)
-            items[i] = other.items[i];
-        cout << "[Copy Constructor] Invoice #" << invoiceID << " created.\n";
+    Room(int rNo, const string& t, int f) : roomNumber(rNo), type(t), floor(f), occupantCount(0) {
+        for (int i = 0; i < 3; i++) occupants[i] = nullptr;
+        if (type == "single") capacity = 1;
+        else if (type == "double") capacity = 2;
+        else capacity = 3;
     }
-
-    Invoice& operator=(const Invoice& other) {
-        if (this == &other) return *this;
-        delete[] items;
-        date = other.date; itemCount = other.itemCount; totalAmount = other.totalAmount;
-        items = new string[itemCount];
-        for (int i = 0; i < itemCount; i++)
-            items[i] = other.items[i];
-        cout << "[Copy Assignment] Invoice #" << invoiceID << " updated.\n";
-        return *this;
+    bool addStudent(Student* s) {
+        if (occupantCount >= capacity) { cout << "  [Room " << roomNumber << "] Full!\n"; return false; }
+        occupants[occupantCount++] = s;
+        cout << "  [Room " << roomNumber << "] " << s->name << " allocated.\n";
+        return true;
     }
-
-    ~Invoice() {
-        cout << "[Destructor] Invoice #" << invoiceID << " destroyed.\n";
-        delete[] items;
+    bool removeStudent(int rollNo) {
+        for (int i = 0; i < occupantCount; i++) {
+            if (occupants[i] && occupants[i]->rollNo == rollNo) {
+                cout << "  [Room " << roomNumber << "] " << occupants[i]->name << " vacated.\n";
+                for (int j = i; j < occupantCount - 1; j++) occupants[j] = occupants[j+1];
+                occupants[--occupantCount] = nullptr;
+                return true;
+            }
+        }
+        cout << "  [Room " << roomNumber << "] Student not found.\n";
+        return false;
     }
-
-    static int getTotalInvoices() { return invoiceCounter; }
-
     void display() const {
-        cout << "\n====== INVOICE ======\n";
-        cout << "Invoice ID   : INV-" << invoiceID << "\n";
-        cout << "Date         : "     << date       << "\n";
-        cout << "Items        :\n";
-        for (int i = 0; i < itemCount; i++)
-            cout << "  " << (i+1) << ". " << items[i] << "\n";
-        cout << "Total Amount : Rs. " << totalAmount << "\n";
-        cout << "=====================\n";
+        cout << "    Room " << roomNumber << " | Type: " << type
+             << " | Floor: " << floor << " | Occupants: " << occupantCount << "/" << capacity << "\n";
+        for (int i = 0; i < occupantCount; i++) if (occupants[i]) occupants[i]->display();
+    }
+    int getRoomNumber() const { return roomNumber; }
+    int getOccupants()  const { return occupantCount; }
+    int getCapacity()   const { return capacity; }
+};
+
+// ======= HostelBlock =======
+class HostelBlock {
+private:
+    string blockName;
+    Room   rooms[10];
+    int    roomCount;
+public:
+    HostelBlock() : blockName(""), roomCount(0) {}
+    HostelBlock(const string& name) : blockName(name), roomCount(0) {}
+    void addRoom(int rNo, const string& type, int floor) {
+        if (roomCount >= 10) { cout << "  Block full!\n"; return; }
+        rooms[roomCount++] = Room(rNo, type, floor);
+        cout << "  [Block " << blockName << "] Room " << rNo << " added.\n";
+    }
+    Room* findRoom(int roomNo) {
+        for (int i = 0; i < roomCount; i++)
+            if (rooms[i].getRoomNumber() == roomNo) return &rooms[i];
+        return nullptr;
+    }
+    void display() const {
+        cout << "\n  === Block: " << blockName << " ===\n";
+        for (int i = 0; i < roomCount; i++) rooms[i].display();
+    }
+    void blockReport() const {
+        int totalOcc = 0, totalCap = 0;
+        for (int i = 0; i < roomCount; i++) { totalOcc += rooms[i].getOccupants(); totalCap += rooms[i].getCapacity(); }
+        cout << "  Block: " << blockName << " | Rooms: " << roomCount
+             << " | Occupancy: " << totalOcc << "/" << totalCap << "\n";
+    }
+    string getName() const { return blockName; }
+};
+
+// ======= Abstract: Accommodation =======
+class Accommodation {
+public:
+    virtual void allocateRoom(int roomNo, Student* s) = 0;
+    virtual void vacateRoom(int roomNo, int rollNo)   = 0;
+    virtual ~Accommodation() {}
+};
+
+// ======= Abstract: Reportable =======
+class Reportable {
+public:
+    virtual void generateReport() const = 0;
+    virtual ~Reportable() {}
+};
+
+// ======= HostelManager (Multiple Inheritance) =======
+class HostelManager : public Accommodation, public Reportable {
+private:
+    HostelBlock blocks[5];
+    int         blockCount;
+public:
+    HostelManager() : blockCount(0) {}
+
+    void addBlock(const string& name) {
+        if (blockCount >= 5) { cout << "Max blocks reached!\n"; return; }
+        blocks[blockCount++] = HostelBlock(name);
+        cout << "[HostelManager] Block '" << name << "' added.\n";
+    }
+
+    void addRoomToBlock(const string& blockName, int rNo, const string& type, int floor) {
+        for (int i = 0; i < blockCount; i++)
+            if (blocks[i].getName() == blockName) { blocks[i].addRoom(rNo, type, floor); return; }
+        cout << "  Block not found!\n";
+    }
+
+    void allocateRoom(int roomNo, Student* s) override {
+        for (int i = 0; i < blockCount; i++) {
+            Room* r = blocks[i].findRoom(roomNo);
+            if (r) { r->addStudent(s); return; }
+        }
+        cout << "  Room " << roomNo << " not found!\n";
+    }
+
+    void vacateRoom(int roomNo, int rollNo) override {
+        for (int i = 0; i < blockCount; i++) {
+            Room* r = blocks[i].findRoom(roomNo);
+            if (r) { r->removeStudent(rollNo); return; }
+        }
+        cout << "  Room " << roomNo << " not found!\n";
+    }
+
+    void generateReport() const override {
+        cout << "\n========== OCCUPANCY REPORT ==========\n";
+        for (int i = 0; i < blockCount; i++) blocks[i].blockReport();
+        cout << "======================================\n";
+    }
+
+    void displayAll() const {
+        cout << "\n========== HOSTEL DETAILS ==========\n";
+        for (int i = 0; i < blockCount; i++) blocks[i].display();
+        cout << "=====================================\n";
     }
 };
 
-int Invoice::invoiceCounter = 0;
-
-
-// ======= MAIN =======
+// ======= main() =======
 int main() {
+    Student s1(101, "Ali Hassan");
+    Student s2(102, "Sara Khan");
+    Student s3(103, "Umar Farooq");
+    Student s4(104, "Zara Ahmed");
+    Student s5(105, "Bilal Raza");
 
-    // ---- FeeRecord Tests ----
-    cout << "\n===== FEERECORD TESTS =====\n";
+    HostelManager hm;
 
-    FeeRecord rec1("Ali Hassan", 45000, 12000, 500);
-    rec1.display();
+    cout << "\n--- Adding Blocks ---\n";
+    hm.addBlock("Block-A");
+    hm.addBlock("Block-B");
 
-    cout << "\n-- Payments --\n";
-    rec1 -= 20000;
-    rec1 -= 10000;
-    rec1.display();
+    cout << "\n--- Adding Rooms ---\n";
+    hm.addRoomToBlock("Block-A", 101, "single", 1);
+    hm.addRoomToBlock("Block-A", 102, "double", 1);
+    hm.addRoomToBlock("Block-A", 103, "triple", 2);
+    hm.addRoomToBlock("Block-B", 201, "single", 1);
+    hm.addRoomToBlock("Block-B", 202, "double", 2);
 
-    cout << "\n-- Copy Constructor --\n";
-    FeeRecord rec2 = rec1;
-    rec2 -= 5000;
-    cout << "rec1 balance: Rs. " << rec1.getBalance() << "\n";
-    cout << "rec2 balance: Rs. " << rec2.getBalance() << "\n";
+    cout << "\n--- Allocating Rooms ---\n";
+    hm.allocateRoom(101, &s1);
+    hm.allocateRoom(102, &s2);
+    hm.allocateRoom(102, &s3);
+    hm.allocateRoom(103, &s4);
+    hm.allocateRoom(103, &s5);
 
-    cout << "\n-- Copy Assignment --\n";
-    FeeRecord rec3("Temp", 0, 0, 0);
-    rec3 = rec1;
-    rec3.display();
+    hm.displayAll();
+    hm.generateReport();
 
+    cout << "\n--- Vacating Student ---\n";
+    hm.vacateRoom(102, 102);
 
-    // ---- Invoice Tests ----
-    cout << "\n===== INVOICE TESTS =====\n";
-
-    string items1[] = {"Semester Fee - Rs.45000", "Hostel Fee - Rs.12000", "Library Fine - Rs.500"};
-    Invoice inv1("2025-01-15", items1, 3, 57500);
-    inv1.display();
-
-    string items2[] = {"Lab Fee - Rs.8000", "Transport - Rs.3000"};
-    Invoice inv2("2025-02-01", items2, 2, 11000);
-    inv2.display();
-
-    cout << "\nTotal Invoices: " << Invoice::getTotalInvoices() << "\n";
-
-    cout << "\n-- Copy Constructor --\n";
-    Invoice inv3 = inv1;
-    inv3.display();
-
-    cout << "\nTotal Invoices after copy: " << Invoice::getTotalInvoices() << "\n";
+    hm.displayAll();
+    hm.generateReport();
 
     cout << "\n===== END =====\n";
     return 0;
